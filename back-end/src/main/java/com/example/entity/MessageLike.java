@@ -75,14 +75,19 @@ public class MessageLike {
     // Equals and hashCode for comparison
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         MessageLike that = (MessageLike) o;
 
-        if (!messageLikeId.equals(that.messageLikeId)) return false;
-        if (!messageId.equals(that.messageId)) return false;
-        if (!likedBy.equals(that.likedBy)) return false;
+        if (!messageLikeId.equals(that.messageLikeId))
+            return false;
+        if (!messageId.equals(that.messageId))
+            return false;
+        if (!likedBy.equals(that.likedBy))
+            return false;
         return timePostedEpoch.equals(that.timePostedEpoch);
     }
 

@@ -16,17 +16,18 @@ public class MessageService {
     private MessageRepository messageRepository;
 
     @Autowired
-    public MessageService(MessageRepository messageRepository){
+    public MessageService(MessageRepository messageRepository) {
         this.messageRepository = messageRepository;
     }
-    
-    
+
     public Message createMessage(Message message) {
         if (message.getTitle() == null || message.getTitle().isEmpty() || message.getTitle().length() > 255) {
             throw new IllegalArgumentException("Invalid title. Title must be non-empty and within 255 characters.");
         }
-        if (message.getMessageText() == null || message.getMessageText().isEmpty() || message.getMessageText().length() > 255) {
-            throw new IllegalArgumentException("Invalid message text. Text must be non-empty and within 255 characters.");
+        if (message.getMessageText() == null || message.getMessageText().isEmpty()
+                || message.getMessageText().length() > 255) {
+            throw new IllegalArgumentException(
+                    "Invalid message text. Text must be non-empty and within 255 characters.");
         }
         return messageRepository.save(message);
     }
@@ -35,16 +36,16 @@ public class MessageService {
         return messageRepository.searchMessagesByTitleIgnoreCase(query); // case-insensitive search
     }
 
-    public List<Message> getAllMessages(){
+    public List<Message> getAllMessages() {
         return messageRepository.findAll();
     }
 
-    public Optional<Message> getMessageById(Integer id){
+    public Optional<Message> getMessageById(Integer id) {
         return messageRepository.findById(id);
     }
 
-    public Integer deleteMessage(Integer id){
-        if (messageRepository.existsById(id)){
+    public Integer deleteMessage(Integer id) {
+        if (messageRepository.existsById(id)) {
             messageRepository.deleteById(id);
             return 1;
         }
@@ -71,7 +72,7 @@ public class MessageService {
         return 0;
     }
 
-    public List<Message> getMessagesByAccountId(Integer accountId){
+    public List<Message> getMessagesByAccountId(Integer accountId) {
         return messageRepository.findByPostedBy(accountId);
     }
 }

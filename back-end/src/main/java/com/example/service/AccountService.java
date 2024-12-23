@@ -16,6 +16,7 @@ public class AccountService {
     private AccountRepository accountRepository;
     @Autowired
     private JwtUtil jwtUtil;
+
     @Autowired
     public AccountService(AccountRepository accountRepository) {
         this.accountRepository = accountRepository;
@@ -36,7 +37,6 @@ public class AccountService {
     }
 
     public Account login(String username, String password) {
-        System.out.println("Attempting login for username: " + username);
         return accountRepository.findByUsername(username)
                 .filter(account -> {
                     return account.getPassword().equals(password);
@@ -45,7 +45,7 @@ public class AccountService {
                     return new IllegalArgumentException("Invalid username or password");
                 });
     }
-    
+
     public Account updateProfile(Integer accountId, String newUsername, String newBio) {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
@@ -61,7 +61,7 @@ public class AccountService {
         if (newBio != null) {
             account.setBio(newBio);
         }
-    
+
         return accountRepository.save(account);
     }
 
@@ -72,8 +72,8 @@ public class AccountService {
 
     public void updateBio(Integer accountId, String newBio) {
         Account account = accountRepository.findById(accountId)
-            .orElseThrow(() -> new IllegalArgumentException("Account not found"));
-    
+                .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
         account.setBio(newBio);
         accountRepository.save(account);
     }

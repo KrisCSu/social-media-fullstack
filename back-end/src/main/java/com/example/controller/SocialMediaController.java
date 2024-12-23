@@ -1,6 +1,7 @@
 package com.example.controller;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -171,12 +172,12 @@ public class SocialMediaController {
     // ---------------- Like Endpoints ----------------
 
     @GetMapping("/likes/{messageId}")
-    public ResponseEntity<List<MessageLike>> getLikesByMessageId(@PathVariable Integer messageId) {
+    public ResponseEntity<?> getLikesByMessageId(@PathVariable Integer messageId) {
         try {
             List<MessageLike> likes = messageLikeService.getLikesByMessageId(messageId);
             return ResponseEntity.ok(likes);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to fetch likes.");
         }
     }
 
@@ -186,10 +187,8 @@ public class SocialMediaController {
             MessageLike createdLike = messageLikeService.addLike(messageLike);
             return ResponseEntity.ok(createdLike);
         } catch (IllegalArgumentException e) {
-            System.out.println("Error during like operation: " + e.getMessage()); // Log error details
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to like message: " + e.getMessage());
         } catch (Exception e) {
-            System.out.println("Unexpected error: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
         }
     }
@@ -201,6 +200,18 @@ public class SocialMediaController {
             return ResponseEntity.ok("Like removed successfully.");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to remove like");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
+        }
+    }
+
+    @GetMapping("/likes/status")
+    public ResponseEntity<?> checkLikeStatus(@RequestParam Integer messageId, @RequestParam Integer likedBy) {
+        try {
+            boolean isLiked = messageLikeService.hasUserLikedMessage(messageId, likedBy);
+            return ResponseEntity.ok(Collections.singletonMap("liked", isLiked));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to check like status.");
         }
     }
 
@@ -209,12 +220,12 @@ public class SocialMediaController {
     @PostMapping(value = "/follows", consumes = "application/json", produces = "application/json")
     public ResponseEntity<?> followUser(@RequestBody Follow follow) {
         try {
-            Follow newFollow = followService.followUser(follow);
-            return ResponseEntity.ok(newFollow); // 确保返回包含 followTimeEpoch 的完整对象
+            followService.followUser(follow);
+            return ResponseEntity.ok("Followed successfully.");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to follow user");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to follow user.");
         }
     }
 
@@ -222,50 +233,36 @@ public class SocialMediaController {
     public ResponseEntity<?> unfollowUser(
             @PathVariable Integer followerId, @PathVariable Integer followeeId) {
         try {
-            logger.info("Attempting to unfollow: followerId={}, followeeId={}", followerId, followeeId);
             followService.unfollowUser(followerId, followeeId);
-            logger.info("Unfollow successful: followerId={}, followeeId={}", followerId, followeeId);
-            return ResponseEntity.ok("Unfollowed successfully");
+            return ResponseEntity.ok("Unfollowed successfully.");
         } catch (IllegalArgumentException e) {
-            logger.warn("Unfollow failed due to invalid input: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
-            logger.error("Unexpected error occurred while unfollowing user", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to unfollow user");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to unfollow user.");
         }
     }
 
-    @GetMapping(value = "/follows/{followerId}/{followeeId}", produces = "application/json")
-    public ResponseEntity<Boolean> checkFollowStatus(
-            @PathVariable Integer followerId, @PathVariable Integer followeeId) {
+    @GetMapping(value = "/follows/status", produces = "application/json")
+    public ResponseEntity<?> checkFollowStatus(
+            @RequestParam Integer followerId, @RequestParam Integer followeeId) {
         try {
-            logger.info("Checking follow status: followerId={}, followeeId={}", followerId, followeeId);
             boolean isFollowing = followService.isFollowing(followerId, followeeId);
-            logger.info("Follow status: followerId={}, followeeId={}, isFollowing={}", followerId, followeeId, isFollowing);
-            return ResponseEntity.ok(isFollowing);
+            boolean isFollowedBy = followService.isFollowing(followeeId, followerId);
+            return ResponseEntity.ok(new FollowStatus(isFollowing, isFollowedBy));
         } catch (Exception e) {
-            logger.error("Unexpected error occurred while checking follow status", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to check follow status.");
         }
     }
 
-    @GetMapping("/follows/{followerId}/{followeeId}")
-    public ResponseEntity<Follow> getFollowDetails(@PathVariable Integer followerId, @PathVariable Integer followeeId) {
-        Follow follow = followService.getFollowDetails(followerId, followeeId);
-        System.out.println("FollowTimeEpoch: " + follow.getFollowTimeEpoch());  // 确保输出followTimeEpoch
-        return ResponseEntity.ok(follow);
-    }
-
+    // ---------------- Search Endpoint ----------------
     @GetMapping("/search")
     public ResponseEntity<List<Object>> search(@RequestParam String query) {
         try {
             List<Object> results = new ArrayList<>();
-            
-            // 查找匹配的消息标题
+
             List<Message> messages = messageService.searchMessagesByTitle(query);
             results.addAll(messages);
-            
-            // 查找匹配的用户名
+
             List<Account> accounts = accountService.searchAccountsByUsername(query);
             results.addAll(accounts);
 
@@ -299,6 +296,25 @@ public class SocialMediaController {
 
         public Integer getAccountId() {
             return accountId;
+        }
+    }
+
+    // DTO for follow status
+    public static class FollowStatus {
+        private final boolean isFollowing;
+        private final boolean isFollowedBy;
+
+        public FollowStatus(boolean isFollowing, boolean isFollowedBy) {
+            this.isFollowing = isFollowing;
+            this.isFollowedBy = isFollowedBy;
+        }
+
+        public boolean getIsFollowing() {
+            return isFollowing;
+        }
+
+        public boolean getIsFollowedBy() {
+            return isFollowedBy;
         }
     }
 }

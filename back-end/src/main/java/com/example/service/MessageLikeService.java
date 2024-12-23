@@ -20,8 +20,9 @@ public class MessageLikeService {
     }
     
     public MessageLike addLike(MessageLike messageLike) {
-        if (messageLikeRepository.findByMessageIdAndLikedBy(messageLike.getMessageId(), messageLike.getLikedBy()) != null) {
-            throw new IllegalArgumentException("User has already liked this message.");
+        MessageLike existingLike = messageLikeRepository.findByMessageIdAndLikedBy(messageLike.getMessageId(), messageLike.getLikedBy());
+        if (existingLike != null) {
+            return existingLike;
         }
         messageLike.setTimePostedEpoch(Instant.now().getEpochSecond());
         return messageLikeRepository.save(messageLike);

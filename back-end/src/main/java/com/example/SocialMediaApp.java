@@ -22,8 +22,9 @@ import static org.springframework.boot.SpringApplication.run;
 public class SocialMediaApp {
     /**
      * Runs the application
+     * 
      * @param args The arguments of the program.
-     * @throws InterruptedException 
+     * @throws InterruptedException
      */
     public static void main(String[] args) throws InterruptedException {
         SpringApplication.run(SocialMediaApp.class, args);
