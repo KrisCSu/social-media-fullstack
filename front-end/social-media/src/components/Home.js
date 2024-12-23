@@ -1,10 +1,22 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import {
+    Container,
+    Card,
+    CardContent,
+    Typography,
+    Grid,
+    Box,
+    Avatar,
+    Alert,
+    CircularProgress,
+} from "@mui/material";
 
 function Home() {
     const [messages, setMessages] = useState([]);
     const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchMessages = async () => {
@@ -14,7 +26,6 @@ function Home() {
                     headers: { Authorization: `Bearer ${token}` },
                 });
 
-                console.log("Fetched messages:", response.data); // Debugging
                 const messagesWithUsernames = await Promise.all(
                     response.data.map(async (message) => {
                         const userResponse = await axios.get(
@@ -26,9 +37,11 @@ function Home() {
                 );
 
                 setMessages(messagesWithUsernames);
+                setLoading(false);
             } catch (err) {
                 console.error("Failed to fetch messages:", err);
                 setError("Failed to load messages. Please try again later.");
+                setLoading(false);
             }
         };
 
@@ -36,31 +49,58 @@ function Home() {
     }, []);
 
     return (
-        <div style={{ padding: "20px" }}>
-            <h1>All Posts</h1>
+        <Container maxWidth="md" style={{ marginTop: "20px" }}>
+            <Typography variant="h4" gutterBottom textAlign="center">
+                All Posts
+            </Typography>
             {error && (
-                <div style={{ backgroundColor: "red", color: "white", padding: "10px", borderRadius: "5px" }}>
+                <Alert severity="error" style={{ marginBottom: "20px" }}>
                     {error}
-                </div>
+                </Alert>
             )}
-            {messages.length > 0 ? (
-                <ul style={{ listStyleType: "none", padding: 0 }}>
+            {loading ? (
+                <Box textAlign="center" mt={4}>
+                    <CircularProgress />
+                </Box>
+            ) : messages.length > 0 ? (
+                <Grid container spacing={3}>
                     {messages.map((message) => (
-                        <li key={message.messageId} style={{ marginBottom: "20px", borderBottom: "1px solid #ccc" }}>
-                            <h2>
-                                <Link to={`/messages/${message.messageId}`}>{message.title}</Link>
-                            </h2>
-                            <p>
-                                <strong>Posted by:</strong>{" "}
-                                <Link to={`/profile/${message.postedBy}`}>{message.username}</Link>
-                            </p>
-                        </li>
+                        <Grid item xs={12} key={message.messageId}>
+                            <Card>
+                                <CardContent>
+                                    <Typography variant="h6" gutterBottom>
+                                        <Link
+                                            to={`/messages/${message.messageId}`}
+                                            style={{ textDecoration: "none", color: "inherit" }}
+                                        >
+                                            {message.title}
+                                        </Link>
+                                    </Typography>
+                                    <Box display="flex" alignItems="center">
+                                        <Avatar alt={message.username} sx={{ marginRight: 2 }}>
+                                            {message.username.charAt(0).toUpperCase()}
+                                        </Avatar>
+                                        <Typography variant="body2" color="textSecondary">
+                                            Posted by{" "}
+                                            <Link
+                                                to={`/profile/${message.postedBy}`}
+                                                style={{ textDecoration: "none", color: "blue" }}
+                                            >
+                                                {message.username}
+                                            </Link>
+                                        </Typography>
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        </Grid>
                     ))}
-                </ul>
+                </Grid>
             ) : (
-                <p>No messages found.</p>
+                <Typography variant="body1" textAlign="center" color="textSecondary">
+                    No messages found.
+                </Typography>
             )}
-        </div>
+        </Container>
     );
 }
 

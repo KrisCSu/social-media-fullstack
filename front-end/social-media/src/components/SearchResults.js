@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import axios from "axios";
+import {
+    Container,
+    Typography,
+    Card,
+    CardContent,
+    List,
+    ListItem,
+    ListItemText,
+    Divider,
+    Alert,
+} from "@mui/material";
 
 function SearchResults() {
     const [results, setResults] = useState([]);
@@ -30,51 +41,77 @@ function SearchResults() {
     }, [query]);
 
     // Group messages and users separately
-    const messages = results.filter(result => result.title);
-    const users = results.filter(result => result.username);
+    const messages = results.filter((result) => result.title);
+    const users = results.filter((result) => result.username);
 
     return (
-        <div style={{ padding: "20px" }}>
-            {error && <p style={{ color: "red" }}>{error}</p>}
-            <h2>Search Results for: "{query}"</h2>
-            
+        <Container maxWidth="md" style={{ marginTop: "20px" }}>
+            {error && <Alert severity="error">{error}</Alert>}
+            <Typography variant="h4" gutterBottom>
+                Search Results for: "{query}"
+            </Typography>
+
             {/* Display posts */}
             {messages.length > 0 && (
-                <div>
-                    <h3>Posts</h3>
-                    {messages.map((result, index) => (
-                        <Link 
-                            key={index} 
-                            to={`/messages/${result.messageId}`} 
-                            style={{ display: "block", margin: "10px 0" }}
-                        >
-                            <h4>{result.title}</h4>
-                        </Link>
-                    ))}
-                </div>
+                <Card style={{ marginBottom: "20px" }}>
+                    <CardContent>
+                        <Typography variant="h5" gutterBottom>
+                            Posts
+                        </Typography>
+                        <List>
+                            {messages.map((result, index) => (
+                                <div key={index}>
+                                    <ListItem
+                                        component={Link}
+                                        to={`/messages/${result.messageId}`}
+                                        style={{ textDecoration: "none", color: "inherit" }}
+                                    >
+                                        <ListItemText
+                                            primary={result.title}
+                                        />
+                                    </ListItem>
+                                    {index < messages.length - 1 && <Divider />}
+                                </div>
+                            ))}
+                        </List>
+                    </CardContent>
+                </Card>
             )}
 
             {/* Display users */}
             {users.length > 0 && (
-                <div>
-                    <h3>Users</h3>
-                    {users.map((result, index) => (
-                        <Link 
-                            key={index} 
-                            to={`/profile/${result.accountId}`} 
-                            style={{ display: "block", margin: "10px 0" }}
-                        >
-                            <h4>{result.username}</h4>
-                        </Link>
-                    ))}
-                </div>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h5" gutterBottom>
+                            Users
+                        </Typography>
+                        <List>
+                            {users.map((result, index) => (
+                                <div key={index}>
+                                    <ListItem
+                                        component={Link}
+                                        to={`/profile/${result.accountId}`}
+                                        style={{ textDecoration: "none", color: "inherit" }}
+                                    >
+                                        <ListItemText
+                                            primary={result.username}
+                                        />
+                                    </ListItem>
+                                    {index < users.length - 1 && <Divider />}
+                                </div>
+                            ))}
+                        </List>
+                    </CardContent>
+                </Card>
             )}
 
             {/* If no results found */}
             {messages.length === 0 && users.length === 0 && (
-                <p>No results found</p>
+                <Typography variant="body1" color="textSecondary">
+                    No results found.
+                </Typography>
             )}
-        </div>
+        </Container>
     );
 }
 

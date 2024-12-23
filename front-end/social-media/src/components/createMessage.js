@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import {
+    Container,
+    TextField,
+    Typography,
+    Button,
+    Alert,
+    Box,
+    Card,
+    CardContent,
+} from '@mui/material';
 
 function CreateMessage() {
     const [title, setTitle] = useState('');
@@ -25,7 +35,7 @@ function CreateMessage() {
                     postedBy,
                     title,
                     messageText,
-                    timePostedEpoch
+                    timePostedEpoch,
                 },
                 {
                     headers: {
@@ -47,46 +57,52 @@ function CreateMessage() {
     };
 
     return (
-        <div style={{ padding: '20px' }}>
-            <h1>Create a New Post</h1>
-            <form onSubmit={handleSubmit} style={{ maxWidth: '400px', margin: '0 auto' }}>
-                <div style={{ marginBottom: '10px' }}>
-                    <label>Title:</label>
-                    <input
-                        type="text"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        required
-                        style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                    />
-                </div>
-                <div style={{ marginBottom: '10px' }}>
-                    <label>Message:</label>
-                    <textarea
-                        value={messageText}
-                        onChange={(e) => setMessageText(e.target.value)}
-                        required
-                        rows="4"
-                        style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                    ></textarea>
-                </div>
-                {error && <p style={{ color: 'red' }}>{error}</p>}
-                {success && <p style={{ color: 'green' }}>{success}</p>}
-                <button
-                    type="submit"
-                    style={{
-                        padding: '10px 20px',
-                        backgroundColor: '#007BFF',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '5px',
-                        cursor: 'pointer',
-                    }}
-                >
-                    Submit
-                </button>
-            </form>
-        </div>
+        <Container maxWidth="sm" style={{ marginTop: '20px' }}>
+            <Card>
+                <CardContent>
+                    <Typography variant="h4" component="h1" gutterBottom>
+                        Create a New Post
+                    </Typography>
+                    <form onSubmit={handleSubmit}>
+                        <Box marginBottom={2}>
+                            <TextField
+                                label="Title"
+                                variant="outlined"
+                                fullWidth
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                required
+                            />
+                        </Box>
+                        <Box marginBottom={2}>
+                            <TextField
+                                label="Content"
+                                variant="outlined"
+                                fullWidth
+                                multiline
+                                rows={4}
+                                value={messageText}
+                                onChange={(e) => setMessageText(e.target.value)}
+                                required
+                            />
+                        </Box>
+                        {error && (
+                            <Alert severity="error" style={{ marginBottom: '20px' }}>
+                                {error}
+                            </Alert>
+                        )}
+                        {success && (
+                            <Alert severity="success" style={{ marginBottom: '20px' }}>
+                                {success}
+                            </Alert>
+                        )}
+                        <Button type="submit" variant="contained" color="primary" fullWidth>
+                            Submit
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
+        </Container>
     );
 }
 

@@ -6,7 +6,7 @@ import Login from "./components/Login";
 import Register from "./components/Register";
 import Home from "./components/Home";
 import Profile from "./components/Profile";
-import CreateMessage from "./components/createMessage";
+import CreateMessage from "./components/CreateMessage";
 import MessageDetail from "./components/MessageDetails";
 import SearchResults from "./components/SearchResults"; // 导入 SearchResults 组件
 import ProtectedRoute from "./components/ProtectedRoute";

@@ -1,6 +1,18 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import {
+    TextField,
+    Button,
+    Typography,
+    Container,
+    Box,
+    Card,
+    CardContent,
+    CardActions,
+    Alert,
+    Grid,
+} from "@mui/material";
 
 function Register() {
     const [username, setUsername] = useState("");
@@ -32,7 +44,7 @@ function Register() {
                 setSuccess("Registration successful! Redirecting to login...");
                 setTimeout(() => {
                     navigate("/login");
-                }, 2000); // 2秒后跳转到登录页面
+                }, 2000);
             }
         } catch (err) {
             console.error("Registration failed:", err);
@@ -41,44 +53,72 @@ function Register() {
     };
 
     return (
-        <div style={{ textAlign: "center", marginTop: "50px" }}>
-            <h1>Register</h1>
-            <form onSubmit={handleRegister} style={{ display: "inline-block", textAlign: "left" }}>
-                <div>
-                    <label>Username:</label>
-                    <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        required
-                    />
-                </div>
-                <br />
-                <div>
-                    <label>Password:</label>
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                    />
-                </div>
-                <br />
-                <div>
-                    <label>Bio:</label>
-                    <input
-                        type="text"
-                        value={bio}
-                        onChange={(e) => setBio(e.target.value)}
-                        placeholder="Tell us about yourself"
-                    />
-                </div>
-                <br />
-                {error && <p style={{ color: "red" }}>{error}</p>}
-                {success && <p style={{ color: "green" }}>{success}</p>}
-                <button type="submit">Register</button>
-            </form>
-        </div>
+        <Container maxWidth="sm" style={{ marginTop: "50px" }}>
+            <Card>
+                <CardContent>
+                    <Box textAlign="center" marginBottom={2}>
+                        <Typography variant="h5">Register</Typography>
+                    </Box>
+                    <form onSubmit={handleRegister}>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Username"
+                                    variant="outlined"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    required
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Password"
+                                    type="password"
+                                    variant="outlined"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    helperText="Password must be at least 8 characters long"
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Bio"
+                                    variant="outlined"
+                                    value={bio}
+                                    onChange={(e) => setBio(e.target.value)}
+                                    placeholder="Tell us about yourself"
+                                />
+                            </Grid>
+                            {error && (
+                                <Grid item xs={12}>
+                                    <Alert severity="error">{error}</Alert>
+                                </Grid>
+                            )}
+                            {success && (
+                                <Grid item xs={12}>
+                                    <Alert severity="success">{success}</Alert>
+                                </Grid>
+                            )}
+                        </Grid>
+                    </form>
+                </CardContent>
+                <CardActions>
+                    <Button
+                        type="submit"
+                        fullWidth
+                        variant="contained"
+                        color="primary"
+                        onClick={handleRegister}
+                    >
+                        Register
+                    </Button>
+                </CardActions>
+            </Card>
+        </Container>
     );
 }
 
