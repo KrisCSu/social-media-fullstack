@@ -27,7 +27,6 @@ function Login() {
                 username,
                 password,
             });
-            console.log('Login Response:', response);
 
             if (response.status === 200) {
                 const { token, accountId } = response.data;
@@ -35,7 +34,6 @@ function Login() {
                 navigate('/home');
             }
         } catch (err) {
-            console.error('Login failed:', err);
             setError('Login failed. Invalid username or password.');
         }
     };

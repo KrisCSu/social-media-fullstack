@@ -39,7 +39,6 @@ function Home() {
                 setMessages(messagesWithUsernames);
                 setLoading(false);
             } catch (err) {
-                console.error("Failed to fetch messages:", err);
                 setError("Failed to load messages. Please try again later.");
                 setLoading(false);
             }

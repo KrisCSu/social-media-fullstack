@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
     Container,
@@ -17,16 +17,24 @@ import {
     ListItem,
     ListItemAvatar,
     ListItemText,
+    IconButton,
+    Tooltip,
 } from "@mui/material";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 
 function MessageDetails() {
     const { messageId } = useParams();
+    const navigate = useNavigate();
     const [message, setMessage] = useState(null);
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
     const [liked, setLiked] = useState(false);
     const [error, setError] = useState(null);
     const [usernameMap, setUsernameMap] = useState({});
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedTitle, setEditedTitle] = useState("");
+    const [editedText, setEditedText] = useState("");
 
     const user = JSON.parse(sessionStorage.getItem("user"));
 
@@ -41,6 +49,8 @@ function MessageDetails() {
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 setMessage(messageResponse.data);
+                setEditedTitle(messageResponse.data.title);
+                setEditedText(messageResponse.data.messageText);
 
                 // Fetch comments
                 const commentsResponse = await axios.get(
@@ -92,14 +102,12 @@ function MessageDetails() {
         try {
             const token = sessionStorage.getItem("token");
             if (liked) {
-                // Unlike the message
                 await axios.delete(
                     `http://localhost:8080/likes?messageId=${messageId}&likedBy=${user.accountId}`,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 setLiked(false);
             } else {
-                // Like the message
                 await axios.post(
                     `http://localhost:8080/likes`,
                     { messageId, likedBy: user.accountId },
@@ -134,6 +142,39 @@ function MessageDetails() {
         }
     };
 
+    const handleEdit = async () => {
+        try {
+            const token = sessionStorage.getItem("token");
+            await axios.patch(
+                `http://localhost:8080/messages/${messageId}`,
+                {
+                    title: editedTitle,
+                    messageText: editedText,
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setMessage({ ...message, title: editedTitle, messageText: editedText });
+            setIsEditing(false);
+        } catch (err) {
+            console.error("Failed to edit message:", err);
+            setError("Failed to edit message.");
+        }
+    };
+
+    const handleDelete = async () => {
+        try {
+            const token = sessionStorage.getItem("token");
+            await axios.delete(
+                `http://localhost:8080/messages/${messageId}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            navigate("/home");
+        } catch (err) {
+            console.error("Failed to delete message:", err);
+            setError("Failed to delete message.");
+        }
+    };
+
     return (
         <Container maxWidth="md" style={{ marginTop: "20px" }}>
             {error && (
@@ -144,26 +185,92 @@ function MessageDetails() {
             {message ? (
                 <Card>
                     <CardContent>
-                        <Typography variant="h5" gutterBottom>
-                            {message.title}
-                        </Typography>
-                        <Typography variant="body1" gutterBottom>
-                            {message.messageText}
-                        </Typography>
-                        <Box display="flex" alignItems="center" marginBottom={2}>
-                            <Avatar>{usernameMap[message.postedBy]?.charAt(0).toUpperCase()}</Avatar>
-                            <Typography variant="body2" color="textSecondary" marginLeft={1}>
-                                Posted by:{" "}
-                                {usernameMap[message.postedBy] || "Unknown User"}
-                            </Typography>
-                        </Box>
-                        <Button
-                            variant="contained"
-                            color={liked ? "secondary" : "primary"}
-                            onClick={handleLike}
-                        >
-                            {liked ? "Liked" : "Like"}
-                        </Button>
+                        {isEditing ? (
+                            <>
+                                <TextField
+                                    fullWidth
+                                    variant="outlined"
+                                    label="Title"
+                                    value={editedTitle}
+                                    onChange={(e) => setEditedTitle(e.target.value)}
+                                    style={{ marginBottom: "10px" }}
+                                />
+                                <TextField
+                                    fullWidth
+                                    variant="outlined"
+                                    label="Content"
+                                    multiline
+                                    rows={4}
+                                    value={editedText}
+                                    onChange={(e) => setEditedText(e.target.value)}
+                                    style={{ marginBottom: "10px" }}
+                                />
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={handleEdit}
+                                    style={{ marginRight: "10px" }}
+                                >
+                                    Save
+                                </Button>
+                                <Button variant="contained" onClick={() => setIsEditing(false)}>
+                                    Cancel
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                <Typography variant="h5" gutterBottom>
+                                    {message.title}
+                                </Typography>
+                                <Typography variant="body1" gutterBottom>
+                                    {message.messageText}
+                                </Typography>
+                                
+                                <Box display="flex" alignItems="center" marginBottom={2}>
+                                    <Avatar>
+                                        {usernameMap[message.postedBy]?.charAt(0).toUpperCase()}
+                                    </Avatar>
+                                    <Typography
+                                        variant="body2"
+                                        color="textSecondary"
+                                        marginLeft={1}
+                                    >
+                                        Initially Posted by: {usernameMap[message.postedBy] || "Unknown User"} at{" "}
+                                        {new Date(message.timePostedEpoch).toLocaleString()}
+                                    </Typography>
+                                </Box>
+                                <Box display="flex" alignItems="center" gap="10px">
+                                    <IconButton onClick={handleLike}>
+                                        <Tooltip title={liked ? "Unlike" : "Like"}>
+                                            {liked ? (
+                                                <FavoriteIcon style={{ color: "red" }} />
+                                            ) : (
+                                                <FavoriteBorderIcon style={{ color: "gray" }} />
+                                            )}
+                                        </Tooltip>
+                                    </IconButton>
+                                </Box>
+
+                                {user.accountId === message.postedBy && (
+                                    <>
+                                        <Button
+                                            variant="contained"
+                                            onClick={() => setIsEditing(true)}
+                                            style={{ marginRight: "10px" }}
+                                        >
+                                            Edit
+                                        </Button>
+                                        <Button
+                                            variant="contained"
+                                            color="error"
+                                            onClick={handleDelete}
+                                        >
+                                            Delete
+                                        </Button>
+                                    </>
+                                )}
+                            </>
+                        )}
                     </CardContent>
                 </Card>
             ) : (

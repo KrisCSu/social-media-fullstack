@@ -10,12 +10,14 @@ import {
     Card,
     CardContent,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 function CreateMessage() {
     const [title, setTitle] = useState('');
     const [messageText, setMessageText] = useState('');
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -46,9 +48,14 @@ function CreateMessage() {
             );
 
             if (response.status === 200) {
+                const createdMessage = response.data;
                 setSuccess('Message created successfully!');
                 setTitle('');
                 setMessageText('');
+
+                // Redirect to message detail
+                navigate(`/messages/${createdMessage.messageId}`);
+                // navigate('/home');
             }
         } catch (err) {
             console.error('Failed to create message:', err);

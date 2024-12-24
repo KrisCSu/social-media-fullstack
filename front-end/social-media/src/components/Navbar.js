@@ -21,7 +21,7 @@ function Navbar() {
             <Toolbar style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <Box style={{ display: "flex", alignItems: "center" }}>
                     <Typography variant="h6" component="div" style={{ marginRight: "20px" }}>
-                        Commune
+                        Sircle
                     </Typography>
                     {auth.token && (
                         <IconButton color="inherit" component={Link} to="/home">
