@@ -25,7 +25,7 @@ function Home() {
                 const response = await axios.get("http://localhost:8080/messages", {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-
+    
                 const messagesWithUsernames = await Promise.all(
                     response.data.map(async (message) => {
                         const userResponse = await axios.get(
@@ -35,15 +35,20 @@ function Home() {
                         return { ...message, username: userResponse.data.username };
                     })
                 );
-
-                setMessages(messagesWithUsernames);
+    
+                // Sort messages from newest to oldest
+                const sortedMessages = messagesWithUsernames.sort(
+                    (a, b) => b.timePostedEpoch - a.timePostedEpoch
+                );
+    
+                setMessages(sortedMessages);
                 setLoading(false);
             } catch (err) {
                 setError("Failed to load messages. Please try again later.");
                 setLoading(false);
             }
         };
-
+    
         fetchMessages();
     }, []);
 

@@ -19,6 +19,7 @@ import {
     ListItemText,
     IconButton,
     Tooltip,
+    Snackbar,
 } from "@mui/material";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
@@ -31,10 +32,12 @@ function MessageDetails() {
     const [newComment, setNewComment] = useState("");
     const [liked, setLiked] = useState(false);
     const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(null);
     const [usernameMap, setUsernameMap] = useState({});
     const [isEditing, setIsEditing] = useState(false);
     const [editedTitle, setEditedTitle] = useState("");
     const [editedText, setEditedText] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const user = JSON.parse(sessionStorage.getItem("user"));
 
@@ -143,6 +146,16 @@ function MessageDetails() {
     };
 
     const handleEdit = async () => {
+        if (!editedTitle.trim() || !editedText.trim()) {
+            setError("Title and message text cannot be empty.");
+            return;
+        }
+        if (editedTitle.length > 255 || editedText.length > 255) {
+            setError("Title and message text must be within 255 characters.");
+            return;
+        }
+
+        setIsSubmitting(true);
         try {
             const token = sessionStorage.getItem("token");
             await axios.patch(
@@ -155,9 +168,12 @@ function MessageDetails() {
             );
             setMessage({ ...message, title: editedTitle, messageText: editedText });
             setIsEditing(false);
+            setSuccess("Message updated successfully!");
         } catch (err) {
             console.error("Failed to edit message:", err);
             setError("Failed to edit message.");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -175,12 +191,26 @@ function MessageDetails() {
         }
     };
 
+    const handleSnackbarClose = () => {
+        setError(null);
+        setSuccess(null);
+    };
+
     return (
         <Container maxWidth="md" style={{ marginTop: "20px" }}>
             {error && (
-                <Alert severity="error" style={{ marginBottom: "20px" }}>
-                    {error}
-                </Alert>
+                <Snackbar open={!!error} autoHideDuration={6000} onClose={handleSnackbarClose}>
+                    <Alert severity="error" onClose={handleSnackbarClose}>
+                        {error}
+                    </Alert>
+                </Snackbar>
+            )}
+            {success && (
+                <Snackbar open={!!success} autoHideDuration={6000} onClose={handleSnackbarClose}>
+                    <Alert severity="success" onClose={handleSnackbarClose}>
+                        {success}
+                    </Alert>
+                </Snackbar>
             )}
             {message ? (
                 <Card>
@@ -209,11 +239,16 @@ function MessageDetails() {
                                     variant="contained"
                                     color="primary"
                                     onClick={handleEdit}
+                                    disabled={isSubmitting}
                                     style={{ marginRight: "10px" }}
                                 >
                                     Save
                                 </Button>
-                                <Button variant="contained" onClick={() => setIsEditing(false)}>
+                                <Button
+                                    variant="contained"
+                                    onClick={() => setIsEditing(false)}
+                                    disabled={isSubmitting}
+                                >
                                     Cancel
                                 </Button>
                             </>
@@ -225,7 +260,6 @@ function MessageDetails() {
                                 <Typography variant="body1" gutterBottom>
                                     {message.messageText}
                                 </Typography>
-                                
                                 <Box display="flex" alignItems="center" marginBottom={2}>
                                     <Avatar>
                                         {usernameMap[message.postedBy]?.charAt(0).toUpperCase()}
@@ -235,7 +269,7 @@ function MessageDetails() {
                                         color="textSecondary"
                                         marginLeft={1}
                                     >
-                                        Initially Posted by: {usernameMap[message.postedBy] || "Unknown User"} at{" "}
+                                        Posted by: {usernameMap[message.postedBy] || "Unknown User"} at{" "}
                                         {new Date(message.timePostedEpoch).toLocaleString()}
                                     </Typography>
                                 </Box>
@@ -295,15 +329,9 @@ function MessageDetails() {
                             primary={comment.commentText}
                             secondary={
                                 <>
-                                    <Typography
-                                        variant="body2"
-                                        color="textSecondary"
-                                    >
-                                        By: {usernameMap[comment.postedBy] || "Unknown User"}{" "}
-                                        at{" "}
-                                        {new Date(
-                                            comment.timePostedEpoch * 1000
-                                        ).toLocaleString()}
+                                    <Typography variant="body2" color="textSecondary">
+                                        By: {usernameMap[comment.postedBy] || "Unknown User"} at{" "}
+                                        {new Date(comment.timePostedEpoch).toLocaleString()}
                                     </Typography>
                                 </>
                             }
