@@ -2,25 +2,27 @@ package com.example.entity;
 
 import javax.persistence.*;
 
+
 @Entity
-@Table(name = "message")
+@Table(name="message")
 public class Message {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "messageId")
+    @Column(name="messageId")
     private Integer messageId;
 
-    @Column(name = "postedBy")
+    @Column(name="postedBy")
     private Integer postedBy;
 
-    @Column(name = "title", nullable = false)
+    @Column(name="title", nullable = false)
     private String title; // 新增的字段
 
-    @Column(name = "messageText")
+    @Column(name="messageText")
     private String messageText;
 
-    @Column(name = "timePostedEpoch")
+    @Column(name="timePostedEpoch")
     private Long timePostedEpoch;
+
 
     public Message() {
     }

@@ -46,7 +46,8 @@ public class AccountService {
                 });
     }
 
-    public Account updateProfile(Integer accountId, String newUsername, String newBio) {
+    public Account updateProfile(String token, Integer accountId, String newUsername, String newBio) {
+        validateTokenAndExtractUsername(token);
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
 
@@ -65,8 +66,8 @@ public class AccountService {
         return accountRepository.save(account);
     }
 
-    public List<Account> searchAccountsByUsername(String query) {
-        // Call the repository's case-insensitive search
+    public List<Account> searchAccountsByUsername(String token, String query) {
+        validateTokenAndExtractUsername(token);
         return accountRepository.searchAccountsByUsernameIgnoreCase(query);
     }
 
@@ -80,5 +81,12 @@ public class AccountService {
 
     public Optional<Account> getAccountById(Integer accountId) {
         return accountRepository.findById(accountId);
+    }
+
+    private String validateTokenAndExtractUsername(String token) {
+        if (!jwtUtil.validateToken(token)) {
+            throw new IllegalArgumentException("Invalid or expired token.");
+        }
+        return jwtUtil.extractUsername(token);
     }
 }

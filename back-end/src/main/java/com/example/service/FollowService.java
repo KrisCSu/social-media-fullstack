@@ -2,6 +2,8 @@ package com.example.service;
 
 import com.example.entity.Follow;
 import com.example.repository.FollowRepository;
+import com.example.util.JwtUtil;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +14,8 @@ import java.util.List;
 public class FollowService {
 
     private final FollowRepository followRepository;
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Autowired
     public FollowService(FollowRepository followRepository) {
@@ -19,7 +23,8 @@ public class FollowService {
     }
 
     @Transactional
-    public Follow followUser(Follow follow) {
+    public Follow followUser(String token, Follow follow) {
+        validateTokenAndExtractUsername(token);
         if (follow.getFollowerId() == null || follow.getFolloweeId() == null) {
             throw new IllegalArgumentException("Follower ID and Followee ID cannot be null");
         }
@@ -30,13 +35,14 @@ public class FollowService {
         if (followRepository.existsByFollowerIdAndFolloweeId(follow.getFollowerId(), follow.getFolloweeId())) {
             throw new IllegalArgumentException("Already following this user");
         }
-    
-        follow.setFollowTimeEpoch(System.currentTimeMillis() / 1000);  // 这里设置时间戳
+
+        follow.setFollowTimeEpoch(System.currentTimeMillis() / 1000); // 这里设置时间戳
         return followRepository.save(follow);
     }
 
     @Transactional
-    public void unfollowUser(Integer followerId, Integer followeeId) {
+    public void unfollowUser(String token, Integer followerId, Integer followeeId) {
+        validateTokenAndExtractUsername(token);
         if (!followRepository.existsByFollowerIdAndFolloweeId(followerId, followeeId)) {
             throw new IllegalArgumentException("Not following this user.");
         }
@@ -54,7 +60,8 @@ public class FollowService {
     }
 
     @Transactional(readOnly = true)
-    public boolean isFollowing(Integer followerId, Integer followeeId) {
+    public boolean isFollowing(String token, Integer followerId, Integer followeeId) {
+        validateTokenAndExtractUsername(token);
         return followRepository.existsByFollowerIdAndFolloweeId(followerId, followeeId);
     }
 
@@ -66,5 +73,12 @@ public class FollowService {
             return follow;
         }
         throw new IllegalArgumentException("No follow record found.");
+    }
+
+    private String validateTokenAndExtractUsername(String token) {
+        if (!jwtUtil.validateToken(token)) {
+            throw new IllegalArgumentException("Invalid or expired token.");
+        }
+        return jwtUtil.extractUsername(token);
     }
 }

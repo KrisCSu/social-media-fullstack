@@ -4,11 +4,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,7 +16,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -38,8 +39,6 @@ import com.example.util.JwtUtil;
 @CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping()
 public class SocialMediaController {
-
-    private final Logger logger = LoggerFactory.getLogger(SocialMediaController.class);
 
     private final AccountService accountService;
     private final MessageService messageService;
@@ -102,10 +101,12 @@ public class SocialMediaController {
 
     @PatchMapping(value = "/accounts/{accountId}", consumes = "application/json", produces = "application/json")
     public ResponseEntity<?> updateProfile(
+            @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable Integer accountId, @RequestBody Account updatedAccount) {
+        String token = authorizationHeader.replace("Bearer ", "");
         try {
-            Account account = accountService.updateProfile(
-                    accountId, updatedAccount.getUsername(), updatedAccount.getBio());
+            Account account = accountService.updateProfile(token, accountId, updatedAccount.getUsername(),
+                    updatedAccount.getBio());
             return ResponseEntity.ok(account);
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already taken");
@@ -117,9 +118,12 @@ public class SocialMediaController {
     // ---------------- Message Endpoints ----------------
 
     @PostMapping(value = "/messages", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<?> createMessage(@RequestBody Message message) {
+    public ResponseEntity<?> createMessage(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestBody Message message) {
         try {
-            Message newMessage = messageService.createMessage(message);
+            String token = authorizationHeader.replace("Bearer ", "");
+            Message newMessage = messageService.createMessage(token, message);
             return ResponseEntity.ok(newMessage);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create message.");
@@ -127,32 +131,58 @@ public class SocialMediaController {
     }
 
     @GetMapping("/messages")
-    public ResponseEntity<List<Message>> getAllMessages() {
-        List<Message> messages = messageService.getAllMessages();
+    public ResponseEntity<List<Message>> getAllMessages(@RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        List<Message> messages = messageService.getAllMessages(token);
         return ResponseEntity.ok(messages);
     }
 
     @GetMapping("/messages/{messageId}")
-    public ResponseEntity<Message> getMessageById(@PathVariable Integer messageId) {
-        return messageService.getMessageById(messageId)
+    public ResponseEntity<Message> getMessageById(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable Integer messageId) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        return messageService.getMessageById(token, messageId)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
     @DeleteMapping("/messages/{messageId}")
-    public ResponseEntity<String> deleteMessage(@PathVariable Integer messageId) {
-        if (messageService.deleteMessage(messageId) == 1) {
+    public ResponseEntity<String> deleteMessage(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable Integer messageId) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        if (messageService.deleteMessage(token, messageId) == 1) {
             return ResponseEntity.ok("Message deleted");
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Message not found");
     }
 
+    @PatchMapping("/messages/{messageId}")
+    public ResponseEntity<?> updateMessage(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable Integer messageId,
+            @RequestBody Message updatedMessage) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        try {
+            Message updated = messageService.editMessage(token, messageId, updatedMessage);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating message.");
+        }
+    }
+
     // ---------------- Comment Endpoints ----------------
 
     @PostMapping(value = "/comments", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<?> createComment(@RequestBody Comment comment) {
+    public ResponseEntity<?> createComment(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestBody Comment comment) {
+        String token = authorizationHeader.replace("Bearer ", "");
         try {
-            Comment newComment = commentService.createComment(comment);
+            Comment newComment = commentService.createComment(token, comment);
             return ResponseEntity.ok(newComment);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid comment");
@@ -160,21 +190,23 @@ public class SocialMediaController {
     }
 
     @GetMapping("/messages/{messageId}/comments")
-    public ResponseEntity<List<Comment>> getCommentsForMessage(@PathVariable Integer messageId) {
-        logger.info("Fetching comments for messageId: {}", messageId);
-        List<Comment> comments = commentService.getCommentsByMessageId(messageId);
-        if (comments.isEmpty()) {
-            logger.info("No comments found for messageId: {}", messageId);
-        }
+    public ResponseEntity<List<Comment>> getCommentsForMessage(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable Integer messageId) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        List<Comment> comments = commentService.getCommentsByMessageId(token, messageId);
         return ResponseEntity.ok(comments);
     }
 
     // ---------------- Like Endpoints ----------------
 
     @GetMapping("/likes/{messageId}")
-    public ResponseEntity<?> getLikesByMessageId(@PathVariable Integer messageId) {
+    public ResponseEntity<?> getLikesByMessageId(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable Integer messageId) {
+        String token = authorizationHeader.replace("Bearer ", "");
         try {
-            List<MessageLike> likes = messageLikeService.getLikesByMessageId(messageId);
+            List<MessageLike> likes = messageLikeService.getLikesByMessageId(token, messageId);
             return ResponseEntity.ok(likes);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to fetch likes.");
@@ -182,9 +214,12 @@ public class SocialMediaController {
     }
 
     @PostMapping(value = "/likes", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<?> likeMessage(@RequestBody MessageLike messageLike) {
+    public ResponseEntity<?> likeMessage(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestBody MessageLike messageLike) {
+        String token = authorizationHeader.replace("Bearer ", "");
         try {
-            MessageLike createdLike = messageLikeService.addLike(messageLike);
+            MessageLike createdLike = messageLikeService.addLike(token, messageLike);
             return ResponseEntity.ok(createdLike);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to like message: " + e.getMessage());
@@ -194,9 +229,13 @@ public class SocialMediaController {
     }
 
     @DeleteMapping("/likes")
-    public ResponseEntity<?> unlikeMessage(@RequestParam Integer messageId, @RequestParam Integer likedBy) {
+    public ResponseEntity<?> unlikeMessage(
+        @RequestHeader("Authorization") String authorizationHeader,
+        @RequestParam Integer messageId, 
+        @RequestParam Integer likedBy) {
+        String token = authorizationHeader.replace("Bearer ", "");
         try {
-            messageLikeService.removeLike(messageId, likedBy);
+            messageLikeService.removeLike(token, messageId, likedBy);
             return ResponseEntity.ok("Like removed successfully.");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to remove like");
@@ -206,9 +245,13 @@ public class SocialMediaController {
     }
 
     @GetMapping("/likes/status")
-    public ResponseEntity<?> checkLikeStatus(@RequestParam Integer messageId, @RequestParam Integer likedBy) {
+    public ResponseEntity<?> checkLikeStatus(
+        @RequestHeader("Authorization") String authorizationHeader,
+        @RequestParam Integer messageId, 
+        @RequestParam Integer likedBy) {
+        String token = authorizationHeader.replace("Bearer ", "");
         try {
-            boolean isLiked = messageLikeService.hasUserLikedMessage(messageId, likedBy);
+            boolean isLiked = messageLikeService.hasUserLikedMessage(token, messageId, likedBy);
             return ResponseEntity.ok(Collections.singletonMap("liked", isLiked));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to check like status.");
@@ -218,9 +261,12 @@ public class SocialMediaController {
     // ---------------- Follow Endpoints ----------------
 
     @PostMapping(value = "/follows", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<?> followUser(@RequestBody Follow follow) {
+    public ResponseEntity<?> followUser(
+        @RequestHeader("Authorization") String authorizationHeader,
+        @RequestBody Follow follow) {
+        String token = authorizationHeader.replace("Bearer ", "");
         try {
-            followService.followUser(follow);
+            followService.followUser(token, follow);
             return ResponseEntity.ok("Followed successfully.");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -231,9 +277,12 @@ public class SocialMediaController {
 
     @DeleteMapping(value = "/follows/{followerId}/{followeeId}", produces = "application/json")
     public ResponseEntity<?> unfollowUser(
-            @PathVariable Integer followerId, @PathVariable Integer followeeId) {
+        @RequestHeader("Authorization") String authorizationHeader,
+        @PathVariable Integer followerId,
+        @PathVariable Integer followeeId) {
         try {
-            followService.unfollowUser(followerId, followeeId);
+            String token = authorizationHeader.replace("Bearer ", "");
+            followService.unfollowUser(token, followerId, followeeId);
             return ResponseEntity.ok("Unfollowed successfully.");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -244,10 +293,13 @@ public class SocialMediaController {
 
     @GetMapping(value = "/follows/status", produces = "application/json")
     public ResponseEntity<?> checkFollowStatus(
-            @RequestParam Integer followerId, @RequestParam Integer followeeId) {
+        @RequestHeader("Authorization") String authorizationHeader,
+        @RequestParam Integer followerId,
+        @RequestParam Integer followeeId) {
         try {
-            boolean isFollowing = followService.isFollowing(followerId, followeeId);
-            boolean isFollowedBy = followService.isFollowing(followeeId, followerId);
+            String token = authorizationHeader.replace("Bearer ", "");
+            boolean isFollowing = followService.isFollowing(token, followerId, followeeId);
+            boolean isFollowedBy = followService.isFollowing(token, followeeId, followerId);
             return ResponseEntity.ok(new FollowStatus(isFollowing, isFollowedBy));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to check follow status.");
@@ -256,14 +308,17 @@ public class SocialMediaController {
 
     // ---------------- Search Endpoint ----------------
     @GetMapping("/search")
-    public ResponseEntity<List<Object>> search(@RequestParam String query) {
+    public ResponseEntity<List<Object>> search(
+        @RequestHeader("Authorization") String authorizationHeader,
+        @RequestParam String query) {
         try {
+            String token = authorizationHeader.replace("Bearer ", "");
             List<Object> results = new ArrayList<>();
 
-            List<Message> messages = messageService.searchMessagesByTitle(query);
+            List<Message> messages = messageService.searchMessagesByTitle(token, query);
             results.addAll(messages);
 
-            List<Account> accounts = accountService.searchAccountsByUsername(query);
+            List<Account> accounts = accountService.searchAccountsByUsername(token, query);
             results.addAll(accounts);
 
             return ResponseEntity.ok(results);

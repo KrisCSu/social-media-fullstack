@@ -10,5 +10,6 @@ import com.example.entity.Comment;
 public interface CommentRepository extends JpaRepository<Comment, Integer> {
 
     List<Comment> findByPostedBy(Integer postedBy);
+
     List<Comment> findByMessageId(Integer messageId);
 }

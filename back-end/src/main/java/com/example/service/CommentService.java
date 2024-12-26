@@ -8,18 +8,24 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import com.example.util.JwtUtil;
+
 
 @Service
 public class CommentService {
 
-    private final CommentRepository commentRepository;
+    @Autowired
+    private CommentRepository commentRepository;
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Autowired
     public CommentService(CommentRepository commentRepository) {
         this.commentRepository = commentRepository;
     }
 
-    public Comment createComment(Comment comment) {
+    public Comment createComment(String token, Comment comment) {
+        validateTokenAndExtractUsername(token);
         if (comment.getCommentText() == null || comment.getCommentText().isEmpty()) {
             throw new IllegalArgumentException("Empty comment content!");
         }
@@ -61,7 +67,15 @@ public class CommentService {
         return commentRepository.findByPostedBy(accountId);
     }
 
-    public List<Comment> getCommentsByMessageId(Integer messageId) {
+    public List<Comment> getCommentsByMessageId(String token, Integer messageId) {
+        validateTokenAndExtractUsername(token);
         return commentRepository.findByMessageId(messageId);
+    }
+
+    private String validateTokenAndExtractUsername(String token) {
+        if (!jwtUtil.validateToken(token)) {
+            throw new IllegalArgumentException("Invalid or expired token.");
+        }
+        return jwtUtil.extractUsername(token);
     }
 }
